@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Decisão: Even Swap</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary: #475569;
+            --secondary-hover: #334155;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+            --success: #22c55e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 1.5rem 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        .explanation-box {
+            background: #e0f2fe;
+            border-left: 4px solid var(--primary);
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 0 4px 4px 0;
+            font-size: 0.95rem;
+        }
+
+        .explanation-box h3 {
+            color: #0369a1;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.6rem 1.2rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--secondary-hover);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+        }
+
+        th,
+        td {
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+
+        th {
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+
+        .matrix-input {
+            width: 100%;
+            min-width: 100px;
+        }
+
+        .flex-row {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .flex-1 {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.7rem;
+            background: #f1f5f9;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .logs {
+            background: #1e293b;
+            color: #38bdf8;
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .top-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Even Swap</h1>
+            <p>Tomada de Decisão Multicritério</p>
+        </div>
+
+        <div class="content">
+            <div class="top-actions" id="top-actions" style="display: none;">
+                <button class="btn btn-secondary" onclick="app.goBack()">&#8592; Voltar </button>
+            </div>
+
+            <div id="step-setup" class="step active">
+                <div class="explanation-box">
+                    <h3>Passo 1: Definição do Problema</h3>
+                    <p>Defina suas alternativas e critérios. Você pode usar critérios <strong>Numéricos</strong> (ex:
+                        Preço) ou <strong>Categóricos Ordinais</strong> (ex: Qualidade: Ruim, Médio, Bom).</p>
+                </div>
+
+                <div class="form-group"
+                    style="background: #f8fafc; padding: 1rem; border: 1px solid var(--border); border-radius: 4px;">
+                    <div class="flex-row">
+                        <div class="flex-1">
+                            <label>Nova Alternativa</label>
+                            <input type="text" id="alt-name" placeholder="Ex: Fornecedor A">
+                        </div>
+                        <button class="btn" onclick="app.addAlternative()">+ Alternativa</button>
+                    </div>
+                    <div id="alt-list"></div>
+                </div>
+
+                <div class="form-group"
+                    style="background: #f8fafc; padding: 1rem; border: 1px solid var(--border); border-radius: 4px;">
+                    <div class="flex-row">
+                        <div class="flex-1">
+                            <label>Novo Critério</label>
+                            <input type="text" id="crit-name" placeholder="Ex: Qualidade">
+                        </div>
+                        <div class="flex-1">
+                            <label>Objetivo</label>
+                            <select id="crit-type">
+                                <option value="max">Maximizar</option>
+                                <option value="min">Minimizar</option>
+                            </select>
+                        </div>
+                        <div class="flex-1">
+                            <label>Formato</label>
+                            <select id="crit-format" onchange="app.toggleCategoricalInput()">
+                                <option value="num">Numérico</option>
+                                <option value="cat">Categórico</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="crit-categories-wrapper" class="form-group" style="display: none;">
+                        <label>Categorias (separadas por vírgula, da <strong>pior</strong> para a
+                            <strong>melhor</strong>)</label>
+                        <input type="text" id="crit-categories" placeholder="Ex: Ruim, Regular, Bom, Ótimo">
+                    </div>
+
+                    <button class="btn" onclick="app.addCriterion()">+ Critério</button>
+                    <div id="crit-list" style="margin-top: 1rem;"></div>
+                </div>
+
+                <button class="btn" style="width: 100%; padding: 1rem;" onclick="app.goToMatrix()">Gerar Matriz
+                    &rarr;</button>
+            </div>
+
+            <div id="step-matrix" class="step">
+                <div class="explanation-box">
+                    <h3>Passo 2: Matriz </h3>
+                    <p>Preencha os dados. Para critérios categóricos, basta selecionar a opção no menu suspenso.</p>
+                </div>
+
+                <div id="matrix-container"></div>
+                <button class="btn" onclick="app.saveMatrix()">Salvar Matriz e Analisar Lógica &rarr;</button>
+            </div>
+
+            <div id="step-analysis" class="step">
+                <div class="explanation-box">
+                    <h3>Passo 3: Limpeza Lógica (Dominância e Empates)</h3>
+                    <p>O algoritmo verifica automaticamente se alguma alternativa é dominada por outra em todos os
+                        critérios, ou se existem empates práticos (critérios irrelevantes).</p>
+                </div>
+
+                <div id="analysis-logs" class="logs"></div>
+                <div id="current-matrix-display"></div>
+
+                <div id="analysis-actions">
+                    <button class="btn" onclick="app.prepareEvenSwap()">Iniciar Processo de Troca (Even Swap)
+                        &rarr;</button>
+                </div>
+            </div>
+
+            <div id="step-evenswap-setup" class="step">
+                <div class="explanation-box">
+                    <h3>Passo 4: Preparar Troca Equivalente</h3>
+                    <p>Escolha um critério para eliminar. O sistema equalizará todas as alternativas para uma Linha de
+                        Base (Baseline).</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Critério Alvo para Neutralizar</label>
+                    <select id="target-criterion"></select>
+                </div>
+
+                <button class="btn" onclick="app.startSwapping()">Avançar para Compensações &rarr;</button>
+            </div>
+
+            <div id="step-evenswap-action" class="step">
+                <div class="explanation-box">
+                    <h3>Passo 5: Compensação (Troca Subjetiva)</h3>
+                    <p id="swap-instruction"></p>
+                </div>
+
+                <div class="form-group"
+                    style="background: #f8fafc; padding: 1.5rem; border: 1px solid var(--border); border-radius: 4px;">
+                    <p style="font-size: 1.1rem; margin-bottom: 0.5rem;"><strong>Alternativa em ajuste:</strong> <span
+                            id="current-swap-alt" style="color: var(--primary);"></span></p>
+                    <p><strong>Critério neutralizado:</strong> <span id="current-swap-target"></span> (<span
+                            id="swap-from"></span> &rarr; <span id="swap-to"></span>)</p>
+
+                    <hr style="margin: 1.5rem 0; border-top: 1px solid var(--border);">
+
+                    <label>Qual outro critério você vai compensar (piorar ou melhorar)?</label>
+                    <select id="compensation-criterion" style="margin-bottom: 1rem;"
+                        onchange="app.updateCompensationInput()"></select>
+
+                    <label>Qual será o <strong>novo valor</strong> desse critério após a compensação?</label>
+                    <div id="compensation-input-wrapper">
+                    </div>
+                </div>
+
+                <button class="btn" onclick="app.confirmSwap()">Confirmar Troca Equivalente</button>
+            </div>
+
+            <div id="step-result" class="step">
+                <div class="explanation-box" style="background: #dcfce7; border-left-color: var(--success);">
+                    <h3 style="color: #166534;">Decisão concluída!</h3>
+                    <p>O método isolou a alternativa vencedora.</p>
+                </div>
+                <h2 id="winner-text"
+                    style="text-align: center; font-size: 2rem; color: var(--primary); margin: 2rem 0;"></h2>
+                <button class="btn btn-secondary" style="display: block; margin: 0 auto;"
+                    onclick="location.reload()">Iniciar Nova Decisão</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        class EvenSwapApp {
+            constructor() {
+                this.alternatives = []; // {id, name, active: true}
+                this.criteria = []; // {id, name, type: 'min'|'max', format: 'num'|'cat', categories: [], active: true}
+                this.matrix = {}; // { altId: { critId: value_or_index } }
+
+                this.swapState = { targetCrit: null, baselineVal: null, pendingAlts: [], currentAlt: null };
+
+                this.history = []; // pilha pra função de voltar
+                this.currentStepId = 'setup';
+            }
+
+            /* sis de histórico pra poder voltar */
+            saveSnapshot() {
+                this.history.push({
+                    stepId: this.currentStepId,
+                    alternatives: JSON.parse(JSON.stringify(this.alternatives)),
+                    criteria: JSON.parse(JSON.stringify(this.criteria)),
+                    matrix: JSON.parse(JSON.stringify(this.matrix)),
+                    swapState: JSON.parse(JSON.stringify(this.swapState)),
+                    logsHTML: document.getElementById('analysis-logs').innerHTML
+                });
+                this.updateBackButton();
+            }
+
+            goBack() {
+                if (this.history.length === 0) return;
+                const snapshot = this.history.pop();
+
+                this.alternatives = snapshot.alternatives;
+                this.criteria = snapshot.criteria;
+                this.matrix = snapshot.matrix;
+                this.swapState = snapshot.swapState;
+                document.getElementById('analysis-logs').innerHTML = snapshot.logsHTML;
+
+                // renderizar dnv a UI com base no passo restaurado
+                if (snapshot.stepId === 'setup') this.renderLists();
+                else if (snapshot.stepId === 'matrix') this.renderMatrixUI();
+                else if (snapshot.stepId === 'analysis') this.renderCurrentMatrixDisplay();
+                else if (snapshot.stepId === 'evenswap-setup') this.prepareEvenSwap(true);
+                else if (snapshot.stepId === 'evenswap-action') this.renderSwapUI();
+
+                this.showStep(snapshot.stepId, false);
+            }
+
+            updateBackButton() {
+                document.getElementById('top-actions').style.display = this.currentStepId === 'setup' ? 'none' : 'flex';
+            }
+
+            /* coisas pra UI */
+            showStep(stepId, saveHist = true) {
+                if (saveHist && this.currentStepId !== stepId) this.saveSnapshot();
+
+                this.currentStepId = stepId;
+                document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+                document.getElementById('step-' + stepId).classList.add('active');
+                this.updateBackButton();
+            }
+
+            logAnalysis(msg) {
+                const logs = document.getElementById('analysis-logs');
+                logs.innerHTML += `<div>> ${msg}</div>`;
+                logs.scrollTop = logs.scrollHeight;
+            }
+
+            getDisplayValue(crit, val) {
+                if (crit.format === 'cat') return crit.categories[val] || val;
+                return val;
+            }
+
+            /* PASSO 1: setup */
+            toggleCategoricalInput() {
+                const isCat = document.getElementById('crit-format').value === 'cat';
+                document.getElementById('crit-categories-wrapper').style.display = isCat ? 'block' : 'none';
+            }
+
+            addAlternative() {
+                const input = document.getElementById('alt-name');
+                if (!input.value.trim()) return alert("Digite o nome.");
+                this.alternatives.push({ id: 'A' + Date.now(), name: input.value.trim(), active: true });
+                input.value = '';
+                this.renderLists();
+            }
+
+            addCriterion() {
+                const name = document.getElementById('crit-name').value.trim();
+                const type = document.getElementById('crit-type').value;
+                const format = document.getElementById('crit-format').value;
+                const catStr = document.getElementById('crit-categories').value; // pra guardar a ordem das categorias
+
+                if (!name) return alert("Digite o nome do critério.");
+                let categories = [];
+                if (format === 'cat') {
+                    categories = catStr.split(',').map(s => s.trim()).filter(s => s);
+                    if (categories.length < 2) return alert("Insira pelo menos 2 categorias separadas por vírgula.");
+                }
+
+                this.criteria.push({ id: 'C' + Date.now(), name, type, format, categories, active: true });
+
+                document.getElementById('crit-name').value = '';
+                document.getElementById('crit-categories').value = '';
+                this.renderLists();
+            }
+
+            renderLists() {
+                document.getElementById('alt-list').innerHTML = this.alternatives.map(a =>
+                    `<div class="list-item"><span>${a.name}</span></div>`
+                ).join('');
+
+                document.getElementById('crit-list').innerHTML = this.criteria.map(c => {
+                    let desc = c.format === 'cat' ? `Categórico [${c.categories.join(' < ')}]` : 'Numérico';
+                    let obj = c.type === 'max' ? 'Max' : 'Min';
+                    return `<div class="list-item"><span><strong>${c.name}</strong> (${obj} - ${desc})</span></div>`;
+                }).join('');
+            }
+
+            /* PASSO 2: matriz */
+            goToMatrix() {
+                if (this.alternatives.length < 2 || this.criteria.length < 2) return alert("Adicione no mínimo 2 alternativas e 2 critérios.");
+                this.renderMatrixUI();
+                this.showStep('matrix');
+            }
+
+            renderMatrixUI() {
+                let tableHTML = `<table><thead><tr><th>Alternativa</th>`;
+                this.criteria.forEach(c => tableHTML += `<th>${c.name}</th>`);
+                tableHTML += `</tr></thead><tbody>`;
+
+                this.alternatives.forEach(a => {
+                    tableHTML += `<tr><td><strong>${a.name}</strong></td>`;
+                    this.criteria.forEach(c => {
+                        let existingVal = (this.matrix[a.id] !== undefined && this.matrix[a.id][c.id] !== undefined) ? this.matrix[a.id][c.id] : '';
+
+                        tableHTML += `<td>`;
+                        if (c.format === 'num') {
+                            tableHTML += `<input type="number" step="any" class="matrix-input" data-alt="${a.id}" data-crit="${c.id}" value="${existingVal}" required>`;
+                        } else {
+                            tableHTML += `<select class="matrix-input" data-alt="${a.id}" data-crit="${c.id}">`;
+                            c.categories.forEach((catName, idx) => {
+                                let sel = (existingVal === idx) ? 'selected' : '';
+                                tableHTML += `<option value="${idx}" ${sel}>${catName}</option>`;
+                            });
+                            tableHTML += `</select>`;
+                        }
+                        tableHTML += `</td>`;
+                    });
+                    tableHTML += `</tr>`;
+                });
+                tableHTML += `</tbody></table>`;
+                document.getElementById('matrix-container').innerHTML = tableHTML;
+            }
+
+            saveMatrix() {
+                this.saveSnapshot(); // salva o estado antes da análise
+                const inputs = document.querySelectorAll('.matrix-input');
+                for (let input of inputs) {
+                    if (input.value === '') return alert("Preencha todos os campos da matriz.");
+                    const altId = input.getAttribute('data-alt');
+                    const critId = input.getAttribute('data-crit');
+
+                    if (!this.matrix[altId]) this.matrix[altId] = {};
+                    this.matrix[altId][critId] = parseFloat(input.value); // o índice da categoria tb é um float seguro
+                }
+                this.runAnalysisLoop();
+            }
+
+            /* PASSO 3: dominância e empates */
+            runAnalysisLoop() {
+                document.getElementById('analysis-logs').innerHTML = '';
+                this.logAnalysis("Analisando matriz lógicamente...");
+
+                let changed = true;
+                while (changed) {
+                    changed = false;
+                    if (this.checkTies()) changed = true;
+                    if (this.checkDominance()) changed = true;
+                }
+
+                this.renderCurrentMatrixDisplay();
+                this.checkStopCondition();
+            }
+
+            getActive(arr) { return arr.filter(x => x.active); }
+
+            checkTies() {
+                let changed = false;
+                const activeAlts = this.getActive(this.alternatives);
+                const activeCrits = this.getActive(this.criteria);
+
+                for (let c of activeCrits) {
+                    let firstVal = this.matrix[activeAlts[0].id][c.id];
+                    let isTie = activeAlts.every(a => this.matrix[a.id][c.id] === firstVal);
+
+                    if (isTie) {
+                        c.active = false; changed = true;
+                        this.logAnalysis(`Critério '${c.name}' eliminado por Empate Prático.`);
+                    }
+                }
+                return changed;
+            }
+
+            checkDominance() {
+                let changed = false;
+                const activeAlts = this.getActive(this.alternatives);
+                const activeCrits = this.getActive(this.criteria);
+
+                for (let i = 0; i < activeAlts.length; i++) {
+                    for (let j = 0; j < activeAlts.length; j++) {
+                        if (i === j || !activeAlts[i].active || !activeAlts[j].active) continue;
+
+                        let altA = activeAlts[i], altB = activeAlts[j];
+                        let dominatesAll = true, strictlyBetterInOne = false;
+
+                        for (let c of activeCrits) {
+                            let valA = this.matrix[altA.id][c.id], valB = this.matrix[altB.id][c.id];
+                            let aIsBetterOrEq = (c.type === 'max') ? (valA >= valB) : (valA <= valB);
+                            let aIsStrictlyBetter = (c.type === 'max') ? (valA > valB) : (valA < valB);
+
+                            if (!aIsBetterOrEq) { dominatesAll = false; break; }
+                            if (aIsStrictlyBetter) strictlyBetterInOne = true;
+                        }
+
+                        if (dominatesAll && strictlyBetterInOne) {
+                            altB.active = false; changed = true;
+                            this.logAnalysis(`Alternativa '${altB.name}' foi DOMINADA por '${altA.name}' e descartada.`);
+                        }
+                    }
+                }
+                return changed;
+            }
+
+            renderCurrentMatrixDisplay() {
+                const activeAlts = this.getActive(this.alternatives);
+                const activeCrits = this.getActive(this.criteria);
+
+                let html = `<table><thead><tr><th>Sobreviventes</th>`;
+                activeCrits.forEach(c => html += `<th>${c.name}</th>`);
+                html += `</tr></thead><tbody>`;
+
+                activeAlts.forEach(a => {
+                    html += `<tr><td><strong>${a.name}</strong></td>`;
+                    activeCrits.forEach(c => {
+                        html += `<td>${this.getDisplayValue(c, this.matrix[a.id][c.id])}</td>`;
+                    });
+                    html += `</tr>`;
+                });
+                html += `</tbody></table>`;
+                document.getElementById('current-matrix-display').innerHTML = html;
+                this.showStep('analysis', false); // false = não cria snapshot repetido aqui para não quebrar o fluxo
+            }
+
+            checkStopCondition() {
+                const activeAlts = this.getActive(this.alternatives);
+                if (activeAlts.length === 1) {
+                    document.getElementById('winner-text').innerText = "Vencedor: " + activeAlts[0].name;
+                    this.showStep('result');
+                }
+            }
+
+            /* PASSO 4 e 5: even swap */
+            prepareEvenSwap(isRestore = false) {
+                const activeCrits = this.getActive(this.criteria);
+                if (activeCrits.length < 2) return alert("Não há critérios suficientes.");
+
+                document.getElementById('target-criterion').innerHTML = activeCrits.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                if (!isRestore) this.showStep('evenswap-setup');
+            }
+
+            startSwapping() {
+                this.saveSnapshot(); // snapshot antes de começar o loop de trocas
+                const targetId = document.getElementById('target-criterion').value;
+                const targetCrit = this.criteria.find(c => c.id === targetId);
+
+                const activeAlts = this.getActive(this.alternatives);
+                const baselineVal = this.matrix[activeAlts[0].id][targetId];
+
+                this.swapState = {
+                    targetCrit: targetCrit,
+                    baselineVal: baselineVal,
+                    pendingAlts: activeAlts.filter(a => this.matrix[a.id][targetId] !== baselineVal),
+                    currentAlt: null
+                };
+
+                if (this.swapState.pendingAlts.length === 0) {
+                    this.logAnalysis(`Critério '${targetCrit.name}' já equalizado. Eliminado.`);
+                    targetCrit.active = false;
+                    this.runAnalysisLoop();
+                } else {
+                    this.processNextSwap();
+                }
+            }
+
+            processNextSwap() {
+                if (this.swapState.pendingAlts.length === 0) {
+                    this.swapState.targetCrit.active = false;
+                    this.logAnalysis(`Trocas concluídas. '${this.swapState.targetCrit.name}' neutralizado e eliminado.`);
+                    this.runAnalysisLoop();
+                    return;
+                }
+                this.swapState.currentAlt = this.swapState.pendingAlts.shift();
+                this.renderSwapUI();
+                this.showStep('evenswap-action', false);
+            }
+
+            renderSwapUI() {
+                const alt = this.swapState.currentAlt;
+                const target = this.swapState.targetCrit;
+                const baseline = this.swapState.baselineVal;
+                const currentVal = this.matrix[alt.id][target.id];
+
+                let displayCurrent = this.getDisplayValue(target, currentVal);
+                let displayBaseline = this.getDisplayValue(target, baseline);
+
+                let msg = `O critério <strong>${target.name}</strong> terá a base <strong>${displayBaseline}</strong>. <br>`;
+                msg += `A alternativa <strong>${alt.name}</strong> mudará de <strong>${displayCurrent}</strong> para <strong>${displayBaseline}</strong>. `;
+
+                const isImprovement = (target.type === 'max' && baseline > currentVal) || (target.type === 'min' && baseline < currentVal);
+                msg += isImprovement
+                    ? `<br><span style="color:var(--danger); font-weight:bold;">Isso é uma melhoria! Você deve PIORAR outro critério em compensação.</span>`
+                    : `<br><span style="color:var(--success); font-weight:bold;">Isso é uma piora! Você deve MELHORAR outro critério em compensação.</span>`;
+
+                document.getElementById('swap-instruction').innerHTML = msg;
+                document.getElementById('current-swap-alt').innerText = alt.name;
+                document.getElementById('current-swap-target').innerText = target.name;
+                document.getElementById('swap-from').innerText = displayCurrent;
+                document.getElementById('swap-to').innerText = displayBaseline;
+
+                const compSelect = document.getElementById('compensation-criterion');
+                const activeCrits = this.getActive(this.criteria).filter(c => c.id !== target.id);
+
+                compSelect.innerHTML = activeCrits.map(c => {
+                    let currentValDisplay = this.getDisplayValue(c, this.matrix[alt.id][c.id]);
+                    return `<option value="${c.id}">${c.name} (Valor atual: ${currentValDisplay})</option>`;
+                }).join('');
+
+                this.updateCompensationInput();
+            }
+
+            updateCompensationInput() {
+                const compCritId = document.getElementById('compensation-criterion').value;
+                const compCrit = this.criteria.find(c => c.id === compCritId);
+                const wrapper = document.getElementById('compensation-input-wrapper');
+
+                if (compCrit.format === 'num') {
+                    wrapper.innerHTML = `<input type="number" id="compensation-value" step="any">`;
+                } else {
+                    let html = `<select id="compensation-value">`;
+                    compCrit.categories.forEach((cat, idx) => html += `<option value="${idx}">${cat}</option>`);
+                    html += `</select>`;
+                    wrapper.innerHTML = html;
+                }
+            }
+
+            confirmSwap() {
+                const inputEl = document.getElementById('compensation-value');
+                if (!inputEl || inputEl.value === '') return alert("Insira o novo valor para compensação.");
+
+                this.saveSnapshot(); // snapshot antes da troca
+
+                const compCritId = document.getElementById('compensation-criterion').value;
+                const newVal = parseFloat(inputEl.value);
+                const altId = this.swapState.currentAlt.id;
+                const targetId = this.swapState.targetCrit.id;
+                const compCrit = this.criteria.find(c => c.id === compCritId);
+
+                let oldValDisplay = this.getDisplayValue(compCrit, this.matrix[altId][compCritId]);
+                let newValDisplay = this.getDisplayValue(compCrit, newVal);
+
+                // aplica matriz
+                this.matrix[altId][targetId] = this.swapState.baselineVal;
+                this.matrix[altId][compCritId] = newVal;
+
+                this.logAnalysis(`Even Swap '${this.swapState.currentAlt.name}': '${this.swapState.targetCrit.name}' = ${this.getDisplayValue(this.swapState.targetCrit, this.swapState.baselineVal)}. Compensou '${compCrit.name}' de ${oldValDisplay} para ${newValDisplay}.`);
+
+                this.processNextSwap();
+            }
+        }
+
+        const app = new EvenSwapApp();
+    </script>
+</body>
+
+</html>
