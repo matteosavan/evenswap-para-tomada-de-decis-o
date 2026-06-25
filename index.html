@@ -62,6 +62,8 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+            color: #3a5c7a;
+
         }
         .content {
             padding: 2rem;
@@ -200,6 +202,9 @@
             max-height: 200px;
             overflow-y: auto;
         }
+        .hidden {
+            display: none !important;
+        }
 
         .top-actions {
             display: flex;
@@ -215,7 +220,7 @@
 
     <div class="container">
         
-        <div class="header">
+        <div class="header" id="method-header">
             <img src="logo.png" alt="Even Swap Logo">
             <div class="header-text">
                 <h1>Even Swap</h1>
@@ -446,8 +451,11 @@
                 document.getElementById('step-' + stepId).classList.add('active');
                 this.updateBackButton();
 
-                document.getElementById('method-explanation').style.display =
-                    (stepId === 'setup') ? 'block' : 'none';
+                document.getElementById('method-explanation')
+                    .classList.toggle('hidden', stepId !== 'setup');
+
+                document.getElementById('method-header')
+                    .classList.toggle('hidden', stepId !== 'setup');
             }
 
             logAnalysis(msg) {
