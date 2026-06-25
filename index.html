@@ -334,14 +334,9 @@
             
             <div id="step-simple-swap" class="step">
 
-                <h3>Passo 3: Swap Simples</h3>
+                <h3>Passo 2: Swap Simples</h3>
 
                 <div id="simple-swap-content"></div>
-
-                <button class="btn"
-                        onclick="app.finishSimpleSwap()">
-                    Continuar
-                </button>
 
             </div>
 
@@ -394,6 +389,7 @@
                     <p>Escolha um critério para eliminar. O sistema equalizará todas as alternativas para uma Linha de
                         Base (Baseline).</p>
                 </div>
+                <div id="evenswap-matrix-preview"></div>
 
                 <div class="form-group">
                     <label>Critério Alvo para Neutralizar</label>
@@ -455,6 +451,40 @@
 
                 this.history = []; // pilha pra função de voltar
                 this.currentStepId = 'setup';
+                this.justPerformedSimpleSwap = false;
+            }
+
+            runDominanceAnalysis() {
+
+                document.getElementById('analysis-logs').innerHTML = '';
+                document.getElementById('eliminated-alternatives').innerHTML = '';
+
+                let changed = true;
+
+                while (changed) {
+
+                    changed = false;
+
+                    if (this.checkTies())
+                        changed = true;
+
+                    if (this.checkDominance())
+                        changed = true;
+                }
+
+                this.renderCurrentMatrixDisplay();
+
+                return this.checkStopCondition();
+            }
+
+            runFullCycle() {
+
+                const finished = this.runDominanceAnalysis();
+
+                if (finished)
+                    return;
+
+                this.prepareSimpleSwap();
             }
 
             findSimpleSwapCandidates() {
@@ -769,7 +799,17 @@
                     if (!this.matrix[altId]) this.matrix[altId] = {};
                     this.matrix[altId][critId] = parseFloat(input.value); // o índice da categoria tb é um float seguro
                 }
-                this.runAnalysisLoop();
+                const finished = this.runDominanceAnalysis();
+
+                if (!finished) {
+
+                    document.getElementById('analysis-actions').innerHTML = `
+                        <button class="btn"
+                                onclick="app.prepareSimpleSwap()">
+                            Continuar →
+                        </button>
+                    `;
+                }
             }
 
             eliminateAlternative(altId) {
@@ -780,11 +820,36 @@
 
                 alt.active = false;
 
+                this.justPerformedSimpleSwap = true;
+
                 this.logAnalysis(
                     `Alternativa '${alt.name}' eliminada via Swap Simples.`
                 );
+                const finished = this.runDominanceAnalysis();
 
-                this.runAnalysisLoop();
+                if (!finished) {
+
+                    this.renderCurrentMatrixDisplay();
+
+                    document.getElementById('analysis-actions').innerHTML = `
+                        <button class="btn"
+                                onclick="app.continueAfterSimpleSwap()">
+                            Continuar →
+                        </button>
+                    `;
+                }
+            }
+            continueAfterSimpleSwap() {
+
+                document.getElementById('analysis-actions').innerHTML = `
+                    <button class="btn"
+                            onclick="app.prepareEvenSwap()">
+                        Iniciar Processo de Troca (Even Swap)
+                        →
+                    </button>
+                `;
+
+                this.prepareSimpleSwap();
             }
 
             renderSimpleSwapScreen() {
@@ -792,6 +857,9 @@
                 const candidate = this.simpleSwapCandidates[0];
 
                 const activeCrits = this.getActive(this.criteria);
+
+                const currentMatrix =
+                    document.getElementById('current-matrix-display').innerHTML;
 
                 let html = `
                     <h4>Swap Simples Encontrado</h4>
@@ -808,11 +876,16 @@
                         </strong>
                     </p>
 
+                    <h4>Matriz Atual</h4>
+
+                    ${currentMatrix}
+
                     <table>
                         <thead>
                             <tr>
                                 <th>Alternativa</th>
                 `;
+
                 activeCrits.forEach(c => {
 
                     const highlight =
@@ -878,15 +951,40 @@
             prepareSimpleSwap() {
 
                 const candidates = this.findSimpleSwapCandidates();
+                if (candidates.length === 0) {
 
-                if(candidates.length === 0){
-                    this.prepareEvenSwap();
+                    if (this.justPerformedSimpleSwap) {
+
+                        this.justPerformedSimpleSwap = false;
+
+                        this.prepareEvenSwap();
+                        return;
+                    }
+
+                    this.renderCurrentMatrixDisplay();
+
+                    document.getElementById('analysis-actions').innerHTML = `
+                        <div style="
+                            margin-bottom:15px;
+                            padding:10px;
+                            background:#fef3c7;
+                            border-left:4px solid #f59e0b;
+                            border-radius:4px;
+                        ">
+                            O swap simples não cabe aqui, logo, este passo foi pulado.
+                        </div>
+
+                        <button class="btn"
+                                onclick="app.prepareEvenSwap()">
+                            Prosseguir para Troca Equivalente →
+                        </button>
+                    `;
+
                     return;
                 }
 
                 this.simpleSwapCandidates = candidates;
                 this.renderSimpleSwapScreen();
-
                 this.showStep('simple-swap');
             }
 
@@ -1006,9 +1104,65 @@
 
             /* PASSO 4 e 5: even swap */
             prepareEvenSwap(isRestore = false) {
-                const activeCrits = this.getActive(this.criteria);
-                if (activeCrits.length < 2) return alert("Não há critérios suficientes.");
 
+                const activeCrits = this.getActive(this.criteria);
+
+                if (activeCrits.length < 2)
+                    return alert("Não há critérios suficientes.");
+
+                const activeAlts = this.getActive(this.alternatives);
+
+                let html = `
+                    <h4 style="margin-bottom:10px;">
+                        Alternativas Restantes
+                    </h4>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Alternativa</th>
+                `;
+
+                activeCrits.forEach(c => {
+                    html += `<th>${c.name}</th>`;
+                });
+
+                html += `
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                activeAlts.forEach(a => {
+
+                    html += `
+                        <tr>
+                            <td><strong>${a.name}</strong></td>
+                    `;
+
+                    activeCrits.forEach(c => {
+
+                        html += `
+                            <td>
+                                ${this.getDisplayValue(
+                                    c,
+                                    this.matrix[a.id][c.id]
+                                )}
+                            </td>
+                        `;
+                    });
+
+                    html += `</tr>`;
+                });
+
+                html += `
+                        </tbody>
+                    </table>
+                `;
+
+                document.getElementById(
+                    'evenswap-matrix-preview'
+                ).innerHTML = html;
                 document.getElementById('target-criterion').innerHTML = activeCrits.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
                 if (!isRestore) this.showStep('evenswap-setup');
             }
