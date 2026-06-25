@@ -332,6 +332,18 @@
             </div>
 
             
+            <div id="step-simple-swap" class="step">
+
+                <h3>Passo 3: Swap Simples</h3>
+
+                <div id="simple-swap-content"></div>
+
+                <button class="btn"
+                        onclick="app.finishSimpleSwap()">
+                    Continuar
+                </button>
+
+            </div>
 
 
 
@@ -375,7 +387,6 @@
 
 
 
-            
 
             <div id="step-evenswap-setup" class="step">
                 <div class="explanation-box">
@@ -444,6 +455,64 @@
 
                 this.history = []; // pilha pra função de voltar
                 this.currentStepId = 'setup';
+            }
+
+            findSimpleSwapCandidates() {
+
+                const activeAlts = this.getActive(this.alternatives);
+                const activeCrits = this.getActive(this.criteria);
+
+                let candidates = [];
+
+                for(let i=0;i<activeAlts.length;i++) {
+
+                    for(let j=i+1;j<activeAlts.length;j++) {
+
+                        let altA = activeAlts[i];
+                        let altB = activeAlts[j];
+
+                        let differing = [];
+
+                        for(let c of activeCrits){
+
+                            let valA = this.matrix[altA.id][c.id];
+                            let valB = this.matrix[altB.id][c.id];
+
+                            if(valA !== valB){
+                                differing.push(c);
+                            }
+                        }
+
+                        if(differing.length !== 2) continue;
+
+                        let winsA = 0;
+                        let winsB = 0;
+
+                        for(let c of differing){
+
+                            let valA = this.matrix[altA.id][c.id];
+                            let valB = this.matrix[altB.id][c.id];
+
+                            if(c.type === 'max'){
+                                if(valA > valB) winsA++;
+                                if(valB > valA) winsB++;
+                            } else {
+                                if(valA < valB) winsA++;
+                                if(valB < valA) winsB++;
+                            }
+                        }
+
+                        if(winsA === 1 && winsB === 1){
+                            candidates.push({
+                                altA,
+                                altB,
+                                criteria: differing
+                            });
+                        }
+                    }
+                }
+
+                return candidates;
             }
 
             showEliminatedAlternative(alt, dominator) {
@@ -703,6 +772,124 @@
                 this.runAnalysisLoop();
             }
 
+            eliminateAlternative(altId) {
+
+                const alt = this.alternatives.find(a => a.id === altId);
+
+                if (!alt) return;
+
+                alt.active = false;
+
+                this.logAnalysis(
+                    `Alternativa '${alt.name}' eliminada via Swap Simples.`
+                );
+
+                this.runAnalysisLoop();
+            }
+
+            renderSimpleSwapScreen() {
+
+                const candidate = this.simpleSwapCandidates[0];
+
+                const activeCrits = this.getActive(this.criteria);
+
+                let html = `
+                    <h4>Swap Simples Encontrado</h4>
+
+                    <p>
+                        As alternativas abaixo empatam em todos os critérios,
+                        exceto em dois, onde cada uma vence em um deles.
+                    </p>
+
+                    <p>
+                        Critérios responsáveis pelo swap:
+                        <strong>
+                            ${candidate.criteria.map(c => c.name).join(' e ')}
+                        </strong>
+                    </p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Alternativa</th>
+                `;
+                activeCrits.forEach(c => {
+
+                    const highlight =
+                        candidate.criteria.some(x => x.id === c.id);
+
+                    html += `
+                        <th style="
+                            ${highlight ? 'background:#fef3c7;' : ''}
+                        ">
+                            ${c.name}${highlight ? ' ⭐' : ''}
+                        </th>
+                    `;
+                });
+                html += `
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                [candidate.altA, candidate.altB].forEach(alt => {
+
+                    html += `
+                        <tr>
+                            <td><strong>${alt.name}</strong></td>
+                    `;
+
+                    activeCrits.forEach(c => {
+                        html += `
+                            <td>
+                                ${this.getDisplayValue(
+                                    c,
+                                    this.matrix[alt.id][c.id]
+                                )}
+                            </td>
+                        `;
+                    });
+
+                    html += `</tr>`;
+                });
+
+                html += `
+                        </tbody>
+                    </table>
+
+                    <p>
+                        Qual alternativa deseja eliminar?
+                    </p>
+
+                    <button class="btn"
+                        onclick="app.eliminateAlternative('${candidate.altA.id}')">
+                        Eliminar ${candidate.altA.name}
+                    </button>
+
+                    <button class="btn btn-secondary"
+                        onclick="app.eliminateAlternative('${candidate.altB.id}')">
+                        Eliminar ${candidate.altB.name}
+                    </button>
+                `;
+
+                document.getElementById('simple-swap-content').innerHTML = html;
+            }
+
+            prepareSimpleSwap() {
+
+                const candidates = this.findSimpleSwapCandidates();
+
+                if(candidates.length === 0){
+                    this.prepareEvenSwap();
+                    return;
+                }
+
+                this.simpleSwapCandidates = candidates;
+                this.renderSimpleSwapScreen();
+
+                this.showStep('simple-swap');
+            }
+
             /* PASSO 3: dominância e empates */
             runAnalysisLoop() {
                 document.getElementById('analysis-logs').innerHTML = '';
@@ -718,7 +905,10 @@
                 }
 
                 this.renderCurrentMatrixDisplay();
-                this.checkStopCondition();
+
+                if(!this.checkStopCondition()){
+                    this.prepareSimpleSwap();
+                }
             }
 
             getActive(arr) { return arr.filter(x => x.active); }
@@ -798,11 +988,20 @@
             }
 
             checkStopCondition() {
+
                 const activeAlts = this.getActive(this.alternatives);
+
                 if (activeAlts.length === 1) {
-                    document.getElementById('winner-text').innerText = "Vencedor: " + activeAlts[0].name;
+
+                    document.getElementById('winner-text').innerText =
+                        "Vencedor: " + activeAlts[0].name;
+
                     this.showStep('result');
+
+                    return true;
                 }
+
+                return false;
             }
 
             /* PASSO 4 e 5: even swap */
