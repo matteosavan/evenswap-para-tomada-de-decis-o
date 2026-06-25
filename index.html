@@ -407,6 +407,15 @@
                 this.updateBackButton();
             }
 
+            removeAlternative(id) {
+                this.alternatives = this.alternatives.filter(a => a.id !== id);
+
+                // remove também os dados da matriz
+                delete this.matrix[id];
+
+                this.renderLists();
+            }
+
             removeCriterion(id) {
                 this.criteria = this.criteria.filter(c => c.id !== id);
 
@@ -507,8 +516,18 @@
 
             renderLists() {
                 document.getElementById('alt-list').innerHTML = this.alternatives.map(a =>
-                    `<div class="list-item"><span>${a.name}</span></div>`
+                    `
+                    <div class="list-item">
+                        <span>${a.name}</span>
+                        <button onclick="app.removeAlternative('${a.id}')"
+                                style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">
+                            X
+                        </button>
+                    </div>
+                    `
                 ).join('');
+
+                
 
                 document.getElementById('crit-list').innerHTML = this.criteria.map(c => {
                     let desc = c.format === 'cat' ? `Categórico [${c.categories.join(' < ')}]` : 'Numérico';
