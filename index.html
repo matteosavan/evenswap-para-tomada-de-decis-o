@@ -74,6 +74,13 @@
             font-size: 1rem;
         }
 
+        .explanation-method h3 {
+            color: #0369a1;
+            margin-bottom: 0.5rem;
+            font-size: 1 rem;
+            text-align: center;
+        }
+
         .form-group {
             margin-bottom: 1rem;
         }
@@ -208,6 +215,14 @@
             <div class="top-actions" id="top-actions" style="display: none;">
                 <button class="btn btn-secondary" onclick="app.goBack()">&#8592; Voltar </button>
             </div>
+            
+            <div  id="method-explanation" class="explanation-method" style="margin-bottom: 2rem;">
+                <h3>A essência do método</h3>
+                <p>
+                    A essência do método é fazer trade-offs do tipo: <strong>"Quanto vale, em termos de objetivo X, a mudança necessária no objetivo Y?"</strong>. Esses trade-offs devem ser compreensíveis para o Decisor, de forma a fazer sentido as trocas e os valores em questão. O Decisor precisa saber quanto está disposto a sacrificar em um objetivo para ganhar em outro.
+                </p>
+            </div>
+
 
             <div id="step-setup" class="step active">
                 <div class="explanation-box">
@@ -405,6 +420,9 @@
                 document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
                 document.getElementById('step-' + stepId).classList.add('active');
                 this.updateBackButton();
+
+                document.getElementById('method-explanation').style.display =
+                    (stepId === 'setup') ? 'block' : 'none';
             }
 
             logAnalysis(msg) {
