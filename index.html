@@ -43,18 +43,26 @@
         }
 
         .header {
-            background: var(--primary);
-            color: white;
-            padding: 1.5rem 2rem;
-            text-align: center;
-            position: relative;
+            display: flex;
+            align-items: center;      /* centraliza verticalmente logo + texto */
+            justify-content: flex-start;
+            gap: 1.5rem;
+
+            width: 100%;              
+            padding: 1rem 15rem;       /* dá “respiro” visual */
+            box-sizing: border-box;
         }
 
-        .header h1 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
+        .header img {
+            max-width: 200px;
+            display: block; /* evita pequenos desalinhamentos de inline img */
         }
 
+        .header-text {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
         .content {
             padding: 2rem;
         }
@@ -206,9 +214,13 @@
 <body>
 
     <div class="container">
+        
         <div class="header">
-            <h1>Even Swap</h1>
-            <p>Tomada de Decisão Multicritério</p>
+            <img src="logo.png" alt="Even Swap Logo">
+            <div class="header-text">
+                <h1>Even Swap</h1>
+                <p>Tomada de Decisão Multicritério</p>
+            </div>
         </div>
 
         <div class="content">
