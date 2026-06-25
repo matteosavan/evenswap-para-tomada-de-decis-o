@@ -388,6 +388,19 @@
                 this.updateBackButton();
             }
 
+            removeCriterion(id) {
+                this.criteria = this.criteria.filter(c => c.id !== id);
+
+                // também remove da matriz (evita lixo de dados)
+                for (let altId in this.matrix) {
+                    if (this.matrix[altId]) {
+                        delete this.matrix[altId][id];
+                    }
+                }
+
+                this.renderLists();
+            }
+
             goBack() {
                 if (this.history.length === 0) return;
                 const snapshot = this.history.pop();
@@ -478,8 +491,18 @@
                 document.getElementById('crit-list').innerHTML = this.criteria.map(c => {
                     let desc = c.format === 'cat' ? `Categórico [${c.categories.join(' < ')}]` : 'Numérico';
                     let obj = c.type === 'max' ? 'Max' : 'Min';
-                    return `<div class="list-item"><span><strong>${c.name}</strong> (${obj} - ${desc})</span></div>`;
-                }).join('');
+
+                    return `
+                        <div class="list-item">
+                            <span>
+                                <strong>${c.name}</strong> (${obj} - ${desc})
+                            </span>
+                            <button onclick="app.removeCriterion('${c.id}')" 
+                                    style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">
+                                X
+                            </button>
+                        </div>
+                    `;}).join('');
             }
 
             /* PASSO 2: matriz */
