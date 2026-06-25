@@ -317,6 +317,9 @@
                 </div>
 
                 <div id="analysis-logs" class="logs"></div>
+
+                <div id="eliminated-alternatives"></div>
+
                 <div id="current-matrix-display"></div>
 
                 <div id="analysis-actions">
@@ -392,6 +395,61 @@
 
                 this.history = []; // pilha pra função de voltar
                 this.currentStepId = 'setup';
+            }
+
+            showEliminatedAlternative(alt, dominator) {
+
+                const container = document.getElementById('eliminated-alternatives');
+
+                const activeCrits = this.getActive(this.criteria);
+
+                let html = `
+                    <div style="
+                        margin-top:15px;
+                        padding:10px;
+                        background:#fee2e2;
+                        border-left:4px solid #ef4444;
+                        border-radius:4px;
+                    ">
+                        <strong>${alt.name}</strong> foi dominada por
+                        <strong>${dominator.name}</strong>
+                    </div>
+
+                    <table style="margin-bottom:20px;">
+                        <thead>
+                            <tr>
+                                <th>Alternativa Eliminada</th>
+                `;
+
+                activeCrits.forEach(c => {
+                    html += `<th>${c.name}</th>`;
+                });
+
+                html += `
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="
+                                    text-decoration:line-through;
+                                    color:#dc2626;
+                                    font-weight:bold;
+                                ">
+                                    ${alt.name}
+                                </td>
+                `;
+
+                activeCrits.forEach(c => {
+                    html += `<td>${this.getDisplayValue(c, this.matrix[alt.id][c.id])}</td>`;
+                });
+
+                html += `
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+
+                container.innerHTML += html;
             }
 
             /* sis de histórico pra poder voltar */
@@ -599,6 +657,8 @@
             /* PASSO 3: dominância e empates */
             runAnalysisLoop() {
                 document.getElementById('analysis-logs').innerHTML = '';
+                document.getElementById('eliminated-alternatives').innerHTML = '';
+
                 this.logAnalysis("Analisando matriz lógicamente...");
 
                 let changed = true;
@@ -653,8 +713,15 @@
                         }
 
                         if (dominatesAll && strictlyBetterInOne) {
-                            altB.active = false; changed = true;
-                            this.logAnalysis(`Alternativa '${altB.name}' foi DOMINADA por '${altA.name}' e descartada.`);
+
+                            this.showEliminatedAlternative(altB, altA);
+
+                            altB.active = false;
+                            changed = true;
+
+                            this.logAnalysis(
+                                `Alternativa '${altB.name}' foi DOMINADA por '${altA.name}' e descartada.`
+                            );
                         }
                     }
                 }
